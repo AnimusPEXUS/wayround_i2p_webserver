@@ -39,7 +39,7 @@ module structure description:
             4. 'wait' - called on domain wait() called
 """
 
-def Domain:
+class Domain:
     """
 
     this class (or it's instances) is not intended for direct initialization.
@@ -116,7 +116,7 @@ def Domain:
         return
 
 
-def DomainPool:
+class DomainPool:
 
     def __init__(self):
         self._storage = {}

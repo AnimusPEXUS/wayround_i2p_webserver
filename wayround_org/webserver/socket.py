@@ -2,12 +2,12 @@
 import socket
 import ssl
 
-import wayround_org.socketserver.socketserver
+import wayround_org.socketserver.server
 
 import wayround_org.webserver.domain
 
 
-def SocketSSL:
+class SocketSSL:
     """
 
     this class (or it's instances) is not intended for direct use.
@@ -24,7 +24,7 @@ def SocketSSL:
         return
 
 
-def Socket:
+class Socket:
     """
 
     this class (or it's instances) is not intended for direct initialization.
