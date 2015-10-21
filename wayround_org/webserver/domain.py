@@ -53,7 +53,7 @@ class Domain:
             domain_data_dict,
             web_server_inst,
             domain_pool_inst,
-            socket_pool
+            socket_pool_inst
             ):
         self.name = domain_data_dict['name']
         self.domain = domain_data_dict['domain']
@@ -66,7 +66,7 @@ class Domain:
 
         self._web_server_inst = web_server_inst
         self._domain_pool_inst = domain_pool_inst
-        self._socket_pool = socket_pool
+        self._socket_pool_inst = socket_pool_inst
 
         self._load_module(web_server_inst)
 
@@ -104,7 +104,7 @@ class Domain:
         if ret:
             self.module_inst = module.WebServerModule(
                 web_server_inst,
-                self._socket_pool,
+                self._socket_pool_inst,
                 self._domain_pool_inst,
                 self.module_parameters
                 )
@@ -129,10 +129,10 @@ class Domain:
 
 class Pool:
 
-    def __init__(self, cfg, web_server_inst, socket_pool):
+    def __init__(self, cfg, web_server_inst, socket_pool_inst):
         self._domain_pool = {}
         for i in cfg['domains']:
-            d = Domain(i, web_server_inst, self, socket_pool)
+            d = Domain(i, web_server_inst, self, socket_pool_inst)
             self._domain_pool[d.name] = d
         return
 
