@@ -37,6 +37,14 @@ class Socket:
         self.address = socket_data_dict['address']
         self.port = socket_data_dict['port']
         self.domain_names = socket_data_dict['domain_names']
+        self.default_domain_name = socket_data_dict['default_domain_name']
+
+        if not isinstance(self.domain_names, list):
+            raise Exception(
+                "configuration: socket config parameter `domain_names' "
+                "values must be list of strings"
+                )
+
         self.ssl = None
         if 'SSL' in socket_data_dict:
             self.ssl = SocketSSLCfg(socket_data_dict['name'])
@@ -51,9 +59,17 @@ class Socket:
         return
 
     def connect_domains(self, domain_pool):
-        for i in self.domain_names:
+        domain_names_to_load = self.domain_names
+        if self.default_domain_name is not None:
+            domain_names_to_load += [self.default_domain_name]
+
+        domain_names_to_load = list(set(domain_names_to_load))
+
+        for i in domain_names_to_load:
 
             dom = domain_pool.get_by_name(i)
+            if dom is None:
+                raise Exception("Domain pool has no name `{}'".format(i))
 
             if dom.domain in self.domains:
                 raise Exception(
@@ -98,21 +114,30 @@ class Socket:
             s.bind((self.address, self.port))
         except OSError as err:
             if err.args[0] == 98:
-                print("Tryed to bind port on address: {}".format(address))
+                print("Tryed to bind port on address: {}".format(self.address))
             raise
 
         self.socket = s
 
+        s.listen(5)  # TODO: configure for this argument
+
         self.socket_server = wayround_org.socketserver.server.SocketServer(
-            self.socket,
+            s,
             self.target
             )
+        self.socket_server.start()
         return
 
     def stop(self):
         if self.socket:
-            self.sock.shutdown(socket.SHUT_WR)
-            self.sock.close()
+            self.socket.shutdown(socket.SHUT_WR)
+            self.socket.close()
+        if self.socket_server:
+            self.socket_server.stop()
+        return
+
+    def wait(self):
+        # TODO
         return
 
     def target(

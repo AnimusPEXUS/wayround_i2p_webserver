@@ -1,4 +1,5 @@
 
+import time
 import threading
 
 import wayround_org.http.message
@@ -28,11 +29,18 @@ class WebServer:
 
         self.socket_pool = wayround_org.webserver.socket.Pool(
             cfg,
-            callable_target_for_socket_pool
+            self.callable_target_for_socket_pool
             )
-        self.domain_pool = wayround_org.webserver.domain.Pool(cfg)
+        self.domain_pool = wayround_org.webserver.domain.Pool(
+            cfg,
+            self,
+            self.socket_pool
+            )
 
-        self.socket_pool.connect_domains(domain_pool)
+        self.socket_pool.connect_domains(self.domain_pool)
+
+        self.domain_pool.start()
+        self.socket_pool.start()
 
         return
 
@@ -42,6 +50,17 @@ class WebServer:
         return
 
     def wait(self):
+        return
+
+    def wait_for_shutdown(self):
+        print("Waiting for user to press CTRL+C to start shutdown")
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print("CTRL+C pressed - shutting down.. please wait..")
+        self.stop()
+        self.wait()
         return
 
     def callable_target_for_socket_pool(
@@ -61,7 +80,21 @@ class WebServer:
             request_line_parsed, header_fields,
             error) = wayround_org.http.message.read_and_parse_header(sock)
 
-        host_field_value = ws_socket_inst.default_domain
+        host_field_value = None
+
+        if ws_socket_inst.default_domain_name is not None:
+            ddn = self.domain_pool.get_by_name(
+                ws_socket_inst.default_domain_name
+                )
+
+            if ddn is not None:
+                host_field_value = ddn.domain
+            else:
+                raise Exception(
+                    "configure: socket has default domain name, "
+                    "but it's not found int domain pool"
+                    )
+
         host_field_value_client_provided = False
 
         for i in header_fields:
@@ -100,8 +133,25 @@ class WebServer:
         if not error:
             ws_domain_inst = ws_socket_inst.domains[host_field_value]
 
+            ws_domain_inst.module_inst.callable_for_webserver(
+                transaction_id,
+                serv,
+                serv_stop_event,
+                sock,
+                addr,
+
+                ws_socket_inst,
+                ws_domain_inst,
+
+                header_bytes,
+                line_terminator,
+                request_line_parsed,
+                header_fields
+                )
+
+            '''
             t = threading.Thread(
-                target=ws_domain_inst.module_inst.callable_for_webserver,
+                target=,
                 args=(
                     transaction_id,
                     serv,
@@ -119,7 +169,7 @@ class WebServer:
                     )
                 )
             t.start()
-
+            '''
         return
 
     def error_socket_shutdown(self, sock, http_response):

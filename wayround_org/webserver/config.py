@@ -5,7 +5,7 @@ import logging
 DOMAIN_KEYS = ['name', 'domain', 'module']
 DOMAIN_KEYS_OPT = ['module_parameters']
 
-SOCKET_KEYS = ['name', 'address', 'port', 'domain_names']
+SOCKET_KEYS = ['name', 'address', 'port', 'domain_names', 'default_domain_name']
 SOCKET_KEYS_OPT = ['SSL']
 
 SSL_KEYS = ['certfile']
