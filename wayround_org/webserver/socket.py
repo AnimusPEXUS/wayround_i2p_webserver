@@ -4,7 +4,7 @@ import ssl
 
 import wayround_org.socketserver.server
 
-import wayround_org.webserver.domain
+import wayround_org.webserver.application
 
 
 class SocketSSL:
@@ -36,12 +36,12 @@ class Socket:
         self.name = socket_data_dict['name']
         self.address = socket_data_dict['address']
         self.port = socket_data_dict['port']
-        self.domain_names = socket_data_dict['domain_names']
-        self.default_domain_name = socket_data_dict['default_domain_name']
+        self.application_names = socket_data_dict['application_names']
+        self.default_application_name = socket_data_dict['default_application_name']
 
-        if not isinstance(self.domain_names, list):
+        if not isinstance(self.application_names, list):
             raise Exception(
-                "configuration: socket config parameter `domain_names' "
+                "configuration: socket config parameter `application_names' "
                 "values must be list of strings"
                 )
 
@@ -49,7 +49,7 @@ class Socket:
         if 'SSL' in socket_data_dict:
             self.ssl = SocketSSLCfg(socket_data_dict['name'])
 
-        self.domains = {}
+        self.applications = {}
 
         self.socket_server = None
         self.socket = None
@@ -58,18 +58,18 @@ class Socket:
 
         return
 
-    def connect_domains(self, domain_pool):
-        domain_names_to_load = self.domain_names
-        if self.default_domain_name is not None:
-            domain_names_to_load += [self.default_domain_name]
+    def connect_applications(self, application_pool):
+        application_names_to_load = self.application_names
+        if self.default_application_name is not None:
+            application_names_to_load += [self.default_application_name]
 
-        domain_names_to_load = list(set(domain_names_to_load))
+        application_names_to_load = list(set(application_names_to_load))
 
-        for i in domain_names_to_load:
+        for i in application_names_to_load:
 
-            dom = domain_pool.get_by_name(i)
+            dom = application_pool.get_by_name(i)
             if dom is None:
-                raise Exception("Domain pool has no name `{}'".format(i))
+                raise Exception("application pool has no name `{}'".format(i))
 
             if dom.domain in self.domains:
                 raise Exception(
@@ -169,9 +169,9 @@ class Pool:
             self._socket_pool.append(Socket(i, callable_target))
         return
 
-    def connect_domains(self, domain_pool):
+    def connect_applications(self, application_pool):
         for i in self._socket_pool:
-            i.connect_domains(domain_pool)
+            i.connect_applications(application_pool)
         return
 
     def start(self):

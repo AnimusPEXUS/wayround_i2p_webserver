@@ -1,12 +1,14 @@
 
 import time
 import threading
+import grp
+import pwd
 
 import wayround_org.http.message
 
 import wayround_org.webserver.config
 import wayround_org.webserver.socket
-import wayround_org.webserver.domain
+import wayround_org.webserver.application
 
 
 class WebServer:
@@ -19,7 +21,10 @@ class WebServer:
         self._config_filepath = config_filepath
 
         self.socket_pool = None
-        self.domain_pool = None
+        self.application_pool = None
+
+        self.gid = None
+        self.uid = None
 
         return
 
@@ -31,22 +36,55 @@ class WebServer:
             cfg,
             self.callable_target_for_socket_pool
             )
-        self.domain_pool = wayround_org.webserver.domain.Pool(
+        self.application_pool = wayround_org.webserver.application.Pool(
             cfg,
             self,
             self.socket_pool
             )
 
-        self.socket_pool.connect_domains(self.domain_pool)
+        self.socket_pool.connect_applications(self.application_pool)
 
-        self.domain_pool.start()
+        self.application_pool.start()
         self.socket_pool.start()
+
+        self.gid = None
+        self.uid = None
+
+        try:
+            self.gid = cfg['general']['gid']
+        except KeyError:
+            pass
+
+        try:
+            self.uid = cfg['general']['uid']
+        except KeyError:
+            pass
+
+        if self.gid:
+
+            if isinstance(self.gid, str):
+                if self.gid.isnumeric():
+                    self.gid = int(self.gid)
+                else:
+                    self.gid = grp.getgrnam(self.gid)[2]
+
+            os.setregid(self.gid, self.gid)
+
+        if self.uid:
+
+            if isinstance(self.uid, str):
+                if self.uid.isnumeric():
+                    self.uid = int(self.uid)
+                else:
+                    self.uid = pwd.getpwnam(self.uid)[2]
+
+            os.setreuid(self.uid, self.uid)
 
         return
 
     def stop(self):
         self.socket_pool.stop()
-        self.domain_pool.stop()
+        self.application_pool.stop()
         return
 
     def wait(self):
@@ -74,7 +112,7 @@ class WebServer:
             ):
 
         error = False
-        ws_domain_inst = None
+        ws_application_inst = None
 
         (header_bytes, line_terminator,
             request_line_parsed, header_fields,
@@ -82,17 +120,17 @@ class WebServer:
 
         host_field_value = None
 
-        if ws_socket_inst.default_domain_name is not None:
-            ddn = self.domain_pool.get_by_name(
-                ws_socket_inst.default_domain_name
+        if ws_socket_inst.default_application_name is not None:
+            ddn = self.application_pool.get_by_name(
+                ws_socket_inst.default_application_name
                 )
 
             if ddn is not None:
                 host_field_value = ddn.domain
             else:
                 raise Exception(
-                    "configure: socket has default domain name, "
-                    "but it's not found int domain pool"
+                    "configure: socket has default application name, "
+                    "but it's not found int application pool"
                     )
 
         host_field_value_client_provided = False
@@ -131,9 +169,9 @@ class WebServer:
                     error = True
 
         if not error:
-            ws_domain_inst = ws_socket_inst.domains[host_field_value]
+            ws_application_inst = ws_socket_inst.domains[host_field_value]
 
-            ws_domain_inst.module_inst.callable_for_webserver(
+            ws_application_inst.module_inst.callable_for_webserver(
                 transaction_id,
                 serv,
                 serv_stop_event,
@@ -141,7 +179,7 @@ class WebServer:
                 addr,
 
                 ws_socket_inst,
-                ws_domain_inst,
+                ws_application_inst,
 
                 header_bytes,
                 line_terminator,
@@ -160,7 +198,7 @@ class WebServer:
                     addr,
 
                     ws_socket_inst,
-                    ws_domain_inst,
+                    ws_application_inst,
 
                     header_bytes,
                     line_terminator,

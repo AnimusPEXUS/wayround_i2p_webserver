@@ -2,10 +2,10 @@
 import yaml
 import logging
 
-DOMAIN_KEYS = ['name', 'domain', 'module']
-DOMAIN_KEYS_OPT = ['module_parameters']
+APPLICATION_KEYS = ['name', 'domain', 'module']
+APPLICATION_KEYS_OPT = ['module_parameters']
 
-SOCKET_KEYS = ['name', 'address', 'port', 'domain_names', 'default_domain_name']
+SOCKET_KEYS = ['name', 'address', 'port', 'application_names', 'default_application_name']
 SOCKET_KEYS_OPT = ['SSL']
 
 SSL_KEYS = ['certfile']
@@ -31,30 +31,30 @@ def read_from_fs(filename):
     return loaded
 
 
-def _correctness_check_domain(data_dict, domain):
+def _correctness_check_application(data_dict, application):
 
     ret = True
 
     if ret:
-        if not isinstance(domain, dict):
-            logging.error("configuration: domain configuration must be dict")
+        if not isinstance(application, dict):
+            logging.error("configuration: application configuration must be dict")
             ret = False
 
     if ret:
-        for i in DOMAIN_KEYS:
-            if not i in domain:
+        for i in APPLICATION_KEYS:
+            if not i in application:
                 logging.error(
-                    "configuration: domain config requires `{}' key".format(
+                    "configuration: application config requires `{}' key".format(
                         i
                         )
                     )
                 ret = False
 
-        for i in list(domain.keys()):
-            if not i in DOMAIN_KEYS and not i in DOMAIN_KEYS_OPT:
+        for i in list(application.keys()):
+            if not i in APPLICATION_KEYS and not i in APPLICATION_KEYS_OPT:
                 logging.error(
                     "configuration: unknown "
-                    "key (`{}') found in domain config".format(
+                    "key (`{}') found in application config".format(
                         i
                         )
                     )
@@ -78,7 +78,7 @@ def _correctness_check_socket(data_dict, socket):
         for i in SOCKET_KEYS:
             if not i in socket:
                 logging.error(
-                    "configuration: domain config requires `{}' key".format(
+                    "configuration: application config requires `{}' key".format(
                         i
                         )
                     )
@@ -156,7 +156,7 @@ def correctness_check(data_dict):
 
     if ret:
 
-        for i in ['domains', 'sockets']:
+        for i in ['applications', 'sockets']:
             if not i in data_dict:
                 logging.error(
                     "configuration: input data dict must have `{}' key".format(
@@ -167,10 +167,10 @@ def correctness_check(data_dict):
                 break
 
     if ret:
-        for each in data_dict['domains']:
-            if not _correctness_check_domain(data_dict, each):
+        for each in data_dict['applications']:
+            if not _correctness_check_application(data_dict, each):
                 logging.error(
-                    "configuration: incorrect domain config: `{}'".format(
+                    "configuration: incorrect application config: `{}'".format(
                         each
                         )
                     )

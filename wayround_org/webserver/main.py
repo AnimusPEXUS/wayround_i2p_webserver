@@ -1,6 +1,9 @@
 #!/usr/bin/python3
 
 import sys
+# import gc
+
+# gc.set_debug(gc.DEBUG_LEAK)
 # import pprint
 
 # print("{}".format(pprint.pformat(sys.path)))
