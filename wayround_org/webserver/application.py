@@ -93,9 +93,9 @@ class Application:
 
         if ret:
 
-            if not hasattr(module, 'WebServerModule'):
+            if not hasattr(module, 'WebServerAppModule'):
                 logging.exception(
-                    "module `{}' has no WebServerModule member".format(
+                    "module `{}' has no WebServerAppModule member".format(
                         module_name
                         )
                     )

@@ -5,48 +5,14 @@ import socket
 import threading
 import time
 import gc
+import copy
 
 import wayround_org.http.message
 
-
-def proxify_socket(one, another, name, stop_event):
-    data = None
-    while True:
-        if stop_event.is_set():
-            break
-        data = None
-        while True:
-            if stop_event.is_set():
-                break
-            try:
-                data = one.recv(4096)
-            except BlockingIOError:
-                pass
-            else:
-                break
-
-        if data is None:
-            stop_event.set()
-            break
-
-        if len(data) == 0:
-            stop_event.set()
-            break
-
-        while True:
-            try:
-                another.sendall(data)
-            except BlockingIOError:
-                pass
-            else:
-                break
-
-    stop_event.set()
-
-    return
+import wayround_org.webserver.module_miscs
 
 
-class WebServerModule:
+class WebServerAppModule:
 
     def __init__(
             self,
@@ -63,7 +29,19 @@ class WebServerModule:
         """
         self.remote_address = config_params['address']
         self.remote_port = config_params['port']
-        self.host_value = config_params['host_value']
+
+        self.host_mode = 'pass'
+        if 'host_mode' in config_params:
+            self.host_mode = config_params['host_mode']
+
+        if not self.host_mode in ['pass', 'use_addr_port', 'custom']:
+            raise ValueError(
+                "invalid `host_mode' in `{}' app config"
+                )
+
+        self.host_value = None
+        if 'host_value' in config_params:
+            self.host_value = config_params['host_value']
 
         self.on_start = None
         if 'on_start' in config_params['on_start']:
@@ -72,7 +50,7 @@ class WebServerModule:
             self.on_start = {
                 'gid': _t.get('gid', None),
                 'uid': _t.get('uid', None),
-                'command': _t.get('command', None),
+                'cmd': _t.get('cmd', None),
                 'args': _t.get('args', None),
                 'cwd': _t.get('cwd', None)
                 }
@@ -89,39 +67,26 @@ class WebServerModule:
 
             # checking uid and gid
 
-            _t = self.on_start
-
-            self.gid = None
-            self.uid = None
-
             try:
-                self.gid = _t['gid']
+                self.gid = self.on_start['gid']
             except KeyError:
                 pass
 
             try:
-                self.uid = _t['uid']
+                self.uid = self.on_start['uid']
             except KeyError:
                 pass
+
+            self.gid, self.uid = \
+                wayround_org.webserver.module_miscs.reformat_gid_uid(
+                    self.gid,
+                    self.uid
+                    )
 
             if self.gid:
-
-                if isinstance(self.gid, str):
-                    if self.gid.isnumeric():
-                        self.gid = int(self.gid)
-                    else:
-                        self.gid = grp.getgrnam(self.gid)[2]
-
                 os.setregid(self.gid, self.gid)
 
             if self.uid:
-
-                if isinstance(self.uid, str):
-                    if self.uid.isnumeric():
-                        self.uid = int(self.uid)
-                    else:
-                        self.uid = pwd.getpwnam(self.uid)[2]
-
                 os.setreuid(self.uid, self.uid)
 
             # starting process
@@ -189,9 +154,7 @@ class WebServerModule:
 
         while True:
             try:
-                remote_socket.connect(
-                    (self.remote_address, self.remote_port)
-                    )
+                remote_socket.connect((self.remote_address, self.remote_port))
             except BlockingIOError:
                 pass
             except:
@@ -199,9 +162,14 @@ class WebServerModule:
             else:
                 break
 
-        for i in range(len(header_fields)):
-            if header_fields[i][0] == b'Host':
-                header_fields[i] = (b'Host', bytes(self.host_value, 'utf-8'))
+        header_fields = \
+            wayround_org.webserver.module_miscs.host_value_hendeling_routine(
+                header_fields,
+                self.host_mode,
+                self.address,
+                self.port,
+                self.host_value
+                )
 
         http_req = wayround_org.http.message.HTTPRequest(
             transaction_id,
@@ -226,22 +194,13 @@ class WebServerModule:
 
         stop_event = threading.Event()
 
-        th1 = threading.Thread(
-            target=proxify_socket,
-            args=(sock, remote_socket, '->', stop_event)
+        wayround_org.webserver.module_miscs.proxify_socket_threads(
+            sock,
+            remote_socket,
+            'some',
+            stop_event
             )
 
-        th2 = threading.Thread(
-            target=proxify_socket,
-            args=(remote_socket, sock, '<-', stop_event)
-            )
-
-        th1.start()
-        th2.start()
-
-        th1.join()
-        th2.join()
-
-        gc.collect()
+        # gc.collect()
 
         return

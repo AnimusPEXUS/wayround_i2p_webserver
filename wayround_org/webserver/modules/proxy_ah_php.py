@@ -12,42 +12,7 @@ import gc
 
 import wayround_org.utils.path
 
-
-def proxify_socket(one, another, name, stop_event):
-    data = None
-    while True:
-        if stop_event.is_set():
-            break
-        data = None
-        while True:
-            if stop_event.is_set():
-                break
-            try:
-                data = one.recv(4096)
-            except BlockingIOError:
-                pass
-            else:
-                break
-
-        if data is None:
-            stop_event.set()
-            break
-
-        if len(data) == 0:
-            stop_event.set()
-            break
-
-        while True:
-            try:
-                another.sendall(data)
-            except BlockingIOError:
-                pass
-            else:
-                break
-
-    stop_event.set()
-
-    return
+import wayround_org.webserver.module_miscs
 
 
 class WebServerModule:
@@ -306,8 +271,8 @@ PidFile "{pidfile}"
                 stdin=subprocess.PIPE
                 )
             httpd_process.wait()
-            #self._httpd_process.terminate()
-            #self._httpd_process.wait()
+            # self._httpd_process.terminate()
+            # self._httpd_process.wait()
         return
 
     def wait(self):
@@ -349,23 +314,14 @@ PidFile "{pidfile}"
             else:
                 break
 
-        for i in range(len(header_fields)):
-            if header_fields[i][0] == b'Host':
-                if self.host_value:
-                    header_fields[i] = (
-                        b'Host', bytes(
-                            self.host_value, 'utf-8'))
-                else:
-                    header_fields[i] = (
-                        b'Host',
-                        bytes(
-                            '{}:{}'.format(
-                                self.remote_address,
-                                self.remote_port
-                                ),
-                            'utf-8'
-                            )
-                        )
+        header_fields = \
+            wayround_org.webserver.module_miscs.host_value_hendeling_routine(
+                header_fields,
+                self.host_mode,
+                self.address,
+                self.port,
+                self.host_value
+                )
 
         http_req = wayround_org.http.message.HTTPRequest(
             transaction_id,
@@ -390,22 +346,11 @@ PidFile "{pidfile}"
 
         stop_event = threading.Event()
 
-        th1 = threading.Thread(
-            target=proxify_socket,
-            args=(sock, remote_socket, '->', stop_event)
+        wayround_org.webserver.module_miscs.proxify_socket_threads(
+            sock,
+            remote_socket,
+            'some',
+            stop_event
             )
-
-        th2 = threading.Thread(
-            target=proxify_socket,
-            args=(remote_socket, sock, '<-', stop_event)
-            )
-
-        th1.start()
-        th2.start()
-
-        th1.join()
-        th2.join()
-
-        gc.collect()
 
         return
