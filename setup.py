@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name='wayround_org_webserver',
-    version='0.1.2',
+    version='0.1.4',
     description='homebrewn webserver',
     author='Alexey Gorshkov',
     author_email='animus@wayround.org',
