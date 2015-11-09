@@ -4,6 +4,7 @@ import grp
 import threading
 import os
 import copy
+import ssl
 
 
 def demote_subprocess(gid, uid):
@@ -71,6 +72,10 @@ def proxify_socket(one, another, name, stop_event):
                 data = one.recv(4096)
             except BlockingIOError:
                 pass
+            except ssl.SSLWantReadError:
+                pass
+            except ssl.SSLWantWriteError:
+                pass
             else:
                 break
 
@@ -86,6 +91,10 @@ def proxify_socket(one, another, name, stop_event):
             try:
                 another.sendall(data)
             except BlockingIOError:
+                pass
+            except ssl.SSLWantReadError:
+                pass
+            except ssl.SSLWantWriteError:
                 pass
             else:
                 break
