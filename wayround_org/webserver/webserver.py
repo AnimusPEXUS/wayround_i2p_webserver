@@ -91,7 +91,7 @@ class WebServer:
         return
 
     def wait_for_shutdown(self):
-        print("Waiting for user to press CTRL+C to start shutdown")
+        print("Press CTRL+C to shutdown")
         try:
             while True:
                 time.sleep(1)

@@ -6,6 +6,8 @@ import threading
 import time
 import gc
 import copy
+import os
+import subprocess
 
 import wayround_org.http.message
 
@@ -43,8 +45,10 @@ class WebServerAppModule:
         if 'host_value' in config_params:
             self.host_value = config_params['host_value']
 
+        # print("before on_start")
+
         self.on_start = None
-        if 'on_start' in config_params['on_start']:
+        if 'on_start' in config_params:
             _t = config_params['on_start']
 
             self.on_start = {
@@ -54,6 +58,8 @@ class WebServerAppModule:
                 'args': _t.get('args', None),
                 'cwd': _t.get('cwd', None)
                 }
+
+            # print("on_start set to: {}".format(self.on_start))
 
         self._proc = None
 
@@ -83,40 +89,29 @@ class WebServerAppModule:
                     self.uid
                     )
 
-            if self.gid:
-                os.setregid(self.gid, self.gid)
-
-            if self.uid:
-                os.setreuid(self.uid, self.uid)
-
             # starting process
 
             cmd = []
 
-            if self.gid or self.uid:
-                su_cmd = ['su', '-l']
+            cmd += [self.on_start['cmd']]
 
-                if self.gid:
-                    su_cmd += ['-g', str(self.gid)]
+            if self.on_start['args']:
+                cmd += self.on_start['args']
 
-                if self.uid:
-                    su_cmd += [str(self.uid)]
-
-                cmd += su_cmd
-
-            cmd += [_t['command']]
-
-            if _t['args']:
-                cmd += _t['args']
-
-            print("starting: {}".format(' '.join(cmd)))
+            # print("starting: {}".format(' '.join(cmd)))
 
             self._httpd_process = subprocess.Popen(
                 cmd,
-                cwd=_t['cwd'],
+                cwd=self.on_start['cwd'],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                stderr=subprocess.PIPE,
+                #start_new_session=True,
+                preexec_fn=
+                    wayround_org.webserver.module_miscs.demote_subprocess(
+                        self.gid,
+                        self.uid
+                        )
                 )
 
         return
@@ -166,8 +161,8 @@ class WebServerAppModule:
             wayround_org.webserver.module_miscs.host_value_hendeling_routine(
                 header_fields,
                 self.host_mode,
-                self.address,
-                self.port,
+                self.remote_address,
+                self.remote_port,
                 self.host_value
                 )
 

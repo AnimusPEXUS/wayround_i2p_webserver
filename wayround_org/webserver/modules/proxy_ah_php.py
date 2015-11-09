@@ -15,7 +15,7 @@ import wayround_org.utils.path
 import wayround_org.webserver.module_miscs
 
 
-class WebServerModule:
+class WebServerAppModule:
 
     def __init__(
             self,

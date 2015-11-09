@@ -4,6 +4,7 @@ import ssl
 
 import wayround_org.socketserver.server
 
+import wayround_org.webserver.config
 import wayround_org.webserver.application
 
 
@@ -37,7 +38,8 @@ class Socket:
         self.address = socket_data_dict['address']
         self.port = socket_data_dict['port']
         self.application_names = socket_data_dict['application_names']
-        self.default_application_name = socket_data_dict['default_application_name']
+        self.default_application_name = socket_data_dict[
+            'default_application_name']
 
         if not isinstance(self.application_names, list):
             raise Exception(
@@ -47,9 +49,9 @@ class Socket:
 
         self.ssl = None
         if 'SSL' in socket_data_dict:
-            self.ssl = SocketSSLCfg(socket_data_dict['name'])
+            self.ssl = SocketSSL(socket_data_dict['SSL'])
 
-        self.applications = {}
+        self.domains = {}
 
         self.socket_server = None
         self.socket = None
@@ -87,6 +89,9 @@ class Socket:
 
         s = None
 
+        s = socket.socket()
+
+        '''
         if self.ssl:
             s = ssl.SSLSocket(
                 server_side=True,
@@ -105,6 +110,26 @@ class Socket:
                 )
         else:
             s = socket.socket()
+        '''
+
+        if self.ssl is not None:
+            s = ssl.wrap_socket(
+                s,
+                server_side=True,
+
+                keyfile=self.ssl.keyfile,
+                certfile=self.ssl.certfile,
+
+                # TODO: need conf
+                # cert_reqs=CERT_NONE,
+                # ssl_version={see docs},
+                # ciphers=None
+
+                # ca_certs=None,
+                # do_handshake_on_connect=True,
+                # suppress_ragged_eofs=True,
+                do_handshake_on_connect=False
+                )
 
         if s is None:
             raise Exception("Programming error")

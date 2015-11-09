@@ -102,7 +102,7 @@ class Application:
                 ret = False
 
         if ret:
-            self.module_inst = module.WebServerModule(
+            self.module_inst = module.WebServerAppModule(
                 web_server_inst,
                 self._socket_pool_inst,
                 self._application_pool_inst,

@@ -2,6 +2,18 @@
 import pwd
 import grp
 import threading
+import os
+import copy
+
+
+def demote_subprocess(gid, uid):
+    def _demote():
+        if gid:
+            os.setregid(gid, gid)
+        if uid:
+            os.setreuid(uid, uid)
+        return
+    return _demote
 
 
 def reformat_gid_uid(gid, uid):

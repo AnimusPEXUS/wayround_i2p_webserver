@@ -5,7 +5,7 @@ import wayround_org.http.server
 import wayround_org.wsgi.server
 
 
-class WebServerModule:
+class WebServerAppModule:
 
     def __init__(
             self,
