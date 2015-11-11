@@ -66,8 +66,6 @@ class WebServerAppModule:
         self.gid = None
         self.uid = None
 
-        self._ps_counter = 0
-
         return
 
     def start(self):
@@ -183,7 +181,7 @@ class WebServerAppModule:
             ''
             )
 
-        reassembled_header_bytes = http_req2.format_header() # + line_terminator
+        reassembled_header_bytes = http_req2.format_header() + line_terminator
 
         stop_event = threading.Event()
 
@@ -193,20 +191,12 @@ class WebServerAppModule:
             stop_event
             )
 
-        self._ps_counter += 1
-
-        print('ps start')
-
         wayround_org.webserver.module_miscs.proxify_socket_threads(
             sock,
             remote_socket,
             'some',
             stop_event
             )
-
-        self._ps_counter -= 1
-
-        print('ps end. count: {}'.format(self._ps_counter))
 
         try:
             sock.shutdown(socket.SHUT_WR)
@@ -227,7 +217,5 @@ class WebServerAppModule:
             remote_socket.close()
         except:
             logging.exception('c2')
-
-        # gc.collect()
 
         return

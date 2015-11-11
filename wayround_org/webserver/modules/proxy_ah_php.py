@@ -66,8 +66,6 @@ class WebServerAppModule:
             'pidfile'
             )
 
-        self._ps_counter = 0
-
         return
 
     def render_config(self):
@@ -364,13 +362,9 @@ PidFile "{pidfile}"
             ''
             )
 
-        reassembled_header_bytes = http_req2.format_header()  + line_terminator
-
-        print("reassembled_header_bytes: {}".format(reassembled_header_bytes))
+        reassembled_header_bytes = http_req2.format_header() + line_terminator
 
         stop_event = threading.Event()
-
-        # remote_socket.send(reassembled_header_bytes)
 
         wayround_org.utils.socket.nb_sendall(
             remote_socket,
@@ -378,20 +372,12 @@ PidFile "{pidfile}"
             stop_event
             )
 
-        self._ps_counter += 1
-
-        print('ps start')
-
         wayround_org.webserver.module_miscs.proxify_socket_threads(
             sock,
             remote_socket,
             'some',
             stop_event
             )
-
-        self._ps_counter -= 1
-
-        print('ps end. count: {}'.format(self._ps_counter))
 
         try:
             sock.shutdown(socket.SHUT_WR)
