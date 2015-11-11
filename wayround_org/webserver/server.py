@@ -12,7 +12,7 @@ import wayround_org.webserver.socket
 import wayround_org.webserver.application
 
 
-class WebServer:
+class Server:
 
     def __init__(
             self,
@@ -119,41 +119,50 @@ class WebServer:
             request_line_parsed, header_fields,
             error) = wayround_org.http.message.read_and_parse_header(sock)
 
-        host_field_value = None
+        if error:
+            print("Some error on read_and_parse_header()")
 
-        if ws_socket_inst.default_application_name is not None:
-            ddn = self.application_pool.get_by_name(
-                ws_socket_inst.default_application_name
-                )
+        if error:
+            # in case of error socket must be closed anyway
+            sock.close()
 
-            if ddn is not None:
-                host_field_value = ddn.domain
-            else:
-                raise Exception(
-                    "configure: socket has default application name, "
-                    "but it's not found int application pool"
+        if not error:
+
+            host_field_value = None
+
+            if ws_socket_inst.default_application_name is not None:
+                ddn = self.application_pool.get_by_name(
+                    ws_socket_inst.default_application_name
                     )
 
-        host_field_value_client_provided = False
+                if ddn is not None:
+                    host_field_value = ddn.domain
+                else:
+                    raise Exception(
+                        "configure: socket has default application name, "
+                        "but it's not found int application pool"
+                        )
 
-        for i in header_fields:
-            if i[0].lower() == 'host':
-                host_field_value = i[1]
-                host_field_value_client_provided = True
-                break
+            host_field_value_client_provided = False
 
-        if host_field_value is None:
-            self.error_socket_shutdown(
-                sock,
-                wayround_org.http.message.HTTPResponse(
-                    500,
-                    None,
-                    "Internal Server Error: "
-                    "not configured default and "
-                    "not Host request field provided"
+            for i in header_fields:
+                if i[0].lower() == 'host':
+                    host_field_value = i[1]
+                    host_field_value_client_provided = True
+                    break
+
+            if host_field_value is None:
+                self.error_socket_shutdown(
+                    sock,
+                    wayround_org.http.message.HTTPResponse(
+                        500,
+                        None,
+                        "Internal Server Error: "
+                        "not configured default and "
+                        "not Host request field provided"
+                        )
                     )
-                )
-            error = True
+                error = True
 
         if not error:
             if host_field_value is not None:
@@ -172,25 +181,12 @@ class WebServer:
         if not error:
             ws_application_inst = ws_socket_inst.domains[host_field_value]
 
-            ws_application_inst.module_inst.callable_for_webserver(
-                transaction_id,
-                serv,
-                serv_stop_event,
-                sock,
-                addr,
+            # creating new thread here to free all unneeded resources used by
+            # callable_target_for_socket_pool()
 
-                ws_socket_inst,
-                ws_application_inst,
-
-                header_bytes,
-                line_terminator,
-                request_line_parsed,
-                header_fields
-                )
-
-            '''
             t = threading.Thread(
-                target=,
+                name='callable_target_for_socket_pool child',
+                target=ws_application_inst.module_inst.callable_for_webserver,
                 args=(
                     transaction_id,
                     serv,
@@ -208,7 +204,7 @@ class WebServer:
                     )
                 )
             t.start()
-            '''
+
         return
 
     def error_socket_shutdown(self, sock, http_response):

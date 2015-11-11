@@ -25,7 +25,7 @@ class WebServerAppModule:
             config_params
             ):
 
-        print("proxy_apache_httpd_php module init")
+        # print("proxy_apache_httpd_php module init")
 
         self.remote_address = config_params['address']
         self.remote_port = config_params['port']
@@ -48,6 +48,11 @@ class WebServerAppModule:
 
         self._httpd_process = None
 
+        self.gid = config_params.get('gid', 0)
+        self.uid = config_params.get('uid', 0)
+
+        self.host_mode = config_params.get('host_mode', 'pass')
+
         #self._one_thread_lock = threading.Lock()
 
         self.tmp_ini_dir = tempfile.TemporaryDirectory()
@@ -61,9 +66,7 @@ class WebServerAppModule:
             'pidfile'
             )
 
-        self.tmp_ini_dir_file = open(self.tmp_ini_dir_file_name, 'w')
-        self.tmp_ini_dir_file.write(self.render_config())
-        self.tmp_ini_dir_file.close()
+        self._ps_counter = 0
 
         return
 
@@ -248,6 +251,27 @@ PidFile "{pidfile}"
         return ret
 
     def start(self):
+
+        tmp_ini_dir_file = open(self.tmp_ini_dir_file_name, 'w')
+        tmp_ini_dir_file.write(self.render_config())
+        tmp_ini_dir_file.close()
+
+        self.gid, self.uid = \
+            wayround_org.webserver.module_miscs.reformat_gid_uid(
+                self.gid,
+                self.uid
+                )
+
+        p = subprocess.Popen(
+            ['chown',
+             '-R',
+             '{}:{}'.format(self.gid, self.uid),
+             self.tmp_ini_dir.name
+             ]
+            )
+
+        p.wait()
+
         cmd = [self.httpd_command] + [
             '-f', self.tmp_ini_dir_file_name,
             '-k', 'start'
@@ -255,7 +279,11 @@ PidFile "{pidfile}"
         self._httpd_process = subprocess.Popen(
             cmd,
             cwd=self.document_root,
-            stdin=subprocess.PIPE
+            stdin=subprocess.PIPE,
+            preexec_fn=wayround_org.webserver.module_miscs.demote_subprocess(
+                self.gid,
+                self.uid
+                )
             )
         return
 
@@ -297,8 +325,6 @@ PidFile "{pidfile}"
             header_fields
             ):
 
-        time.sleep(3)
-
         remote_socket = socket.socket()
         remote_socket.setblocking(False)
 
@@ -309,8 +335,6 @@ PidFile "{pidfile}"
                     )
             except BlockingIOError:
                 pass
-            except:
-                raise
             else:
                 break
 
@@ -318,8 +342,8 @@ PidFile "{pidfile}"
             wayround_org.webserver.module_miscs.host_value_hendeling_routine(
                 header_fields,
                 self.host_mode,
-                self.address,
-                self.port,
+                self.remote_address,
+                self.remote_port,
                 self.host_value
                 )
 
@@ -340,11 +364,23 @@ PidFile "{pidfile}"
             ''
             )
 
-        reassembled_header_bytes = http_req2.format_header() + line_terminator
+        reassembled_header_bytes = http_req2.format_header()  + line_terminator
 
-        remote_socket.send(reassembled_header_bytes)
+        print("reassembled_header_bytes: {}".format(reassembled_header_bytes))
 
         stop_event = threading.Event()
+
+        # remote_socket.send(reassembled_header_bytes)
+
+        wayround_org.utils.socket.nb_sendall(
+            remote_socket,
+            reassembled_header_bytes,
+            stop_event
+            )
+
+        self._ps_counter += 1
+
+        print('ps start')
 
         wayround_org.webserver.module_miscs.proxify_socket_threads(
             sock,
@@ -352,5 +388,31 @@ PidFile "{pidfile}"
             'some',
             stop_event
             )
+
+        self._ps_counter -= 1
+
+        print('ps end. count: {}'.format(self._ps_counter))
+
+        try:
+            sock.shutdown(socket.SHUT_WR)
+        except:
+            logging.exception('s1')
+
+        try:
+            remote_socket.shutdown(socket.SHUT_WR)
+        except:
+            logging.exception('s1')
+
+        try:
+            sock.close()
+        except:
+            logging.exception('c1')
+
+        try:
+            remote_socket.close()
+        except:
+            logging.exception('c2')
+
+        # gc.collect()
 
         return

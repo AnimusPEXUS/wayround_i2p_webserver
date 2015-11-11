@@ -66,6 +66,8 @@ class WebServerAppModule:
         self.gid = None
         self.uid = None
 
+        self._ps_counter = 0
+
         return
 
     def start(self):
@@ -106,12 +108,10 @@ class WebServerAppModule:
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                #start_new_session=True,
-                preexec_fn=
-                    wayround_org.webserver.module_miscs.demote_subprocess(
-                        self.gid,
-                        self.uid
-                        )
+                preexec_fn=wayround_org.webserver.module_miscs.demote_subprocess(
+                    self.gid,
+                    self.uid
+                    )
                 )
 
         return
@@ -183,11 +183,19 @@ class WebServerAppModule:
             ''
             )
 
-        reassembled_header_bytes = http_req2.format_header() + line_terminator
-
-        remote_socket.send(reassembled_header_bytes)
+        reassembled_header_bytes = http_req2.format_header() # + line_terminator
 
         stop_event = threading.Event()
+
+        wayround_org.utils.socket.nb_sendall(
+            remote_socket,
+            reassembled_header_bytes,
+            stop_event
+            )
+
+        self._ps_counter += 1
+
+        print('ps start')
 
         wayround_org.webserver.module_miscs.proxify_socket_threads(
             sock,
@@ -195,6 +203,30 @@ class WebServerAppModule:
             'some',
             stop_event
             )
+
+        self._ps_counter -= 1
+
+        print('ps end. count: {}'.format(self._ps_counter))
+
+        try:
+            sock.shutdown(socket.SHUT_WR)
+        except:
+            logging.exception('s1')
+
+        try:
+            remote_socket.shutdown(socket.SHUT_WR)
+        except:
+            logging.exception('s1')
+
+        try:
+            sock.close()
+        except:
+            logging.exception('c1')
+
+        try:
+            remote_socket.close()
+        except:
+            logging.exception('c2')
 
         # gc.collect()
 

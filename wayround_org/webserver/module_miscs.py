@@ -5,6 +5,10 @@ import threading
 import os
 import copy
 import ssl
+import time
+import select
+
+import wayround_org.utils.socket
 
 
 def demote_subprocess(gid, uid):
@@ -37,8 +41,14 @@ def reformat_gid_uid(gid, uid):
 
     return gid, uid
 
+# proxify_socket_threads_count = 0
+
 
 def proxify_socket_threads(one, another, name, stop_event):
+
+    # global proxify_socket_threads_count
+
+    # proxify_socket_threads_count += 1
 
     th1 = threading.Thread(
         target=proxify_socket,
@@ -56,48 +66,35 @@ def proxify_socket_threads(one, another, name, stop_event):
     th1.join()
     th2.join()
 
+    # proxify_socket_threads_count -= 1
+
+    # print("proxify_socket_threads_count: {}".format(proxify_socket_threads_count))
+
     return
 
 
 def proxify_socket(one, another, name, stop_event):
     data = None
     while True:
+        # print('proxify_socket 1')
+
         if stop_event.is_set():
             break
-        data = None
-        while True:
-            if stop_event.is_set():
-                break
-            try:
-                data = one.recv(4096)
-            except BlockingIOError:
-                pass
-            except ssl.SSLWantReadError:
-                pass
-            except ssl.SSLWantWriteError:
-                pass
-            else:
-                break
+
+        data = wayround_org.utils.socket.nb_recv(one, 4096, stop_event)
+
+        print("proxify_socket recv (name: {}): {}".format(name, data))
+
+        if stop_event.is_set():
+            break
 
         if data is None:
-            stop_event.set()
             break
 
         if len(data) == 0:
-            stop_event.set()
             break
 
-        while True:
-            try:
-                another.sendall(data)
-            except BlockingIOError:
-                pass
-            except ssl.SSLWantReadError:
-                pass
-            except ssl.SSLWantWriteError:
-                pass
-            else:
-                break
+        wayround_org.utils.socket.nb_sendall(another, data, stop_event)
 
     stop_event.set()
 
