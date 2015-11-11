@@ -83,7 +83,7 @@ def proxify_socket(one, another, name, stop_event):
 
         data = wayround_org.utils.socket.nb_recv(one, 4096, stop_event)
 
-        print("proxify_socket recv (name: {}): {}".format(name, data))
+        # print("proxify_socket recv (name: {}): {}".format(name, data))
 
         if stop_event.is_set():
             break
