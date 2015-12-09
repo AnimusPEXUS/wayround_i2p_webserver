@@ -5,6 +5,8 @@ import grp
 import pwd
 import os
 
+import wayround_org.utils.osutils
+
 import wayround_org.http.message
 
 import wayround_org.webserver.config
@@ -61,25 +63,13 @@ class Server:
         except KeyError:
             pass
 
-        if self.gid:
+        self.gid, self.uid = wayround_org.utils.osutils.convert_gid_uid(
+            self.gid, self.uid
+            )
 
-            if isinstance(self.gid, str):
-                if self.gid.isnumeric():
-                    self.gid = int(self.gid)
-                else:
-                    self.gid = grp.getgrnam(self.gid)[2]
+        os.setregid(self.gid, self.gid)
 
-            os.setregid(self.gid, self.gid)
-
-        if self.uid:
-
-            if isinstance(self.uid, str):
-                if self.uid.isnumeric():
-                    self.uid = int(self.uid)
-                else:
-                    self.uid = pwd.getpwnam(self.uid)[2]
-
-            os.setreuid(self.uid, self.uid)
+        os.setreuid(self.uid, self.uid)
 
         return
 
@@ -111,6 +101,8 @@ class Server:
             addr,
             ws_socket_inst
             ):
+
+        sock.setblocking(False)
 
         error = False
         ws_application_inst = None

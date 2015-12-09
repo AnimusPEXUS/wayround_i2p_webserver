@@ -8,23 +8,6 @@ import wayround_org.webserver.config
 import wayround_org.webserver.application
 
 
-class SocketSSL:
-    """
-
-    this class (or it's instances) is not intended for direct use.
-    it should be used throug Socket instances which has non-None .ssl
-    attribute
-    """
-
-    def __init__(self, socket_data_dict):
-        self.keyfile = None
-        if 'keyfile' in socket_data_dict:
-            self.keyfile = socket_data_dict['keyfile']
-
-        self.certfile = socket_data_dict['certfile']
-        return
-
-
 class Socket:
     """
 
@@ -49,12 +32,19 @@ class Socket:
 
         self.ssl = None
         if 'SSL' in socket_data_dict:
-            self.ssl = SocketSSL(socket_data_dict['SSL'])
+            self.ssl = wayround_org.socketserver.server.SocketSSL(
+                socket_data_dict['SSL']
+                )
 
         self.domains = {}
 
-        self.socket_server = None
         self.socket = None
+
+        self.socket_server = wayround_org.socketserver.server.SocketServer(
+            self.socket,
+            self.target,
+            self.ssl
+            )
 
         self._callable_target = callable_target
 
@@ -87,54 +77,10 @@ class Socket:
 
     def start(self):
 
-        s = None
-
         s = socket.socket()
 
-        '''
-        if self.ssl:
-            s = ssl.SSLSocket(
-                server_side=True,
-
-                keyfile=self.ssl.keyfile,
-                certfile=self.ssl.certfile
-
-                # TODO: need conf
-                # cert_reqs=CERT_NONE,
-                # ssl_version={see docs},
-                # ciphers=None
-
-                # ca_certs=None,
-                # do_handshake_on_connect=True,
-                # suppress_ragged_eofs=True,
-                )
-        else:
-            s = socket.socket()
-        '''
-
-        if self.ssl is not None:
-            s = ssl.wrap_socket(
-                s,
-                server_side=True,
-
-                keyfile=self.ssl.keyfile,
-                certfile=self.ssl.certfile,
-
-                # TODO: need conf
-                # cert_reqs=CERT_NONE,
-                # ssl_version={see docs},
-                # ciphers=None
-
-                # ca_certs=None,
-                # do_handshake_on_connect=True,
-                # suppress_ragged_eofs=True,
-                do_handshake_on_connect=False
-                )
-
-        if s is None:
-            raise Exception("Programming error")
-
         s.setblocking(False)
+
         try:
             s.bind((self.address, self.port))
         except OSError as err:
@@ -142,23 +88,23 @@ class Socket:
                 print("Tryed to bind port on address: {}".format(self.address))
             raise
 
-        self.socket = s
-
         s.listen(5)  # TODO: configure for this argument
 
-        self.socket_server = wayround_org.socketserver.server.SocketServer(
-            s,
-            self.target
-            )
+        self.socket_server.set_sock(s)
+
+        self.socket_server.wrap()
+
+        self.socket = self.socket_server.get_sock()
+
         self.socket_server.start()
+
         return
 
     def stop(self):
         if self.socket:
             self.socket.shutdown(socket.SHUT_WR)
             self.socket.close()
-        if self.socket_server:
-            self.socket_server.stop()
+        self.socket_server.stop()
         return
 
     def wait(self):
