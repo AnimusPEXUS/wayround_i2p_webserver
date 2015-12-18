@@ -37,7 +37,8 @@ class Server:
 
         self.socket_pool = wayround_org.webserver.socket.Pool(
             cfg,
-            self.callable_target_for_socket_pool
+            self.callable_target_for_socket_pool,
+            cls_to_use=wayround_org.webserver.socket.Socket
             )
         self.application_pool = wayround_org.webserver.application.Pool(
             cfg,
@@ -67,9 +68,11 @@ class Server:
             self.gid, self.uid
             )
 
-        os.setregid(self.gid, self.gid)
+        if self.gid is not None:
+            os.setregid(self.gid, self.gid)
 
-        os.setreuid(self.uid, self.uid)
+        if self.uid is not None:
+            os.setreuid(self.uid, self.uid)
 
         return
 

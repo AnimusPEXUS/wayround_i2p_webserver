@@ -3,6 +3,7 @@ import socket
 import ssl
 
 import wayround_org.socketserver.server
+import wayround_org.socketserver.service
 
 import wayround_org.webserver.config
 import wayround_org.webserver.application
@@ -12,7 +13,6 @@ class Socket:
     """
 
     this class (or it's instances) is not intended for direct initialization.
-
     it's created, used and destroyed by SocketPool class instance
     """
 
@@ -32,7 +32,7 @@ class Socket:
 
         self.ssl = None
         if 'SSL' in socket_data_dict:
-            self.ssl = wayround_org.socketserver.server.SocketSSL(
+            self.ssl = wayround_org.socketserver.server.SSLConfig(
                 socket_data_dict['SSL']
                 )
 
@@ -43,7 +43,7 @@ class Socket:
         self.socket_server = wayround_org.socketserver.server.SocketServer(
             self.socket,
             self.target,
-            self.ssl
+            ssl_config=self.ssl
             )
 
         self._callable_target = callable_target
@@ -92,7 +92,8 @@ class Socket:
 
         self.socket_server.set_sock(s)
 
-        self.socket_server.wrap()
+        if self.socket_server.get_is_ssl_config_defined():
+            self.socket_server.wrap()
 
         self.socket = self.socket_server.get_sock()
 
@@ -108,7 +109,7 @@ class Socket:
         return
 
     def wait(self):
-        # TODO
+        self.socket_server.wait()
         return
 
     def target(
@@ -132,30 +133,9 @@ class Socket:
         return
 
 
-class Pool:
-
-    def __init__(self, cfg, callable_target):
-        self._socket_pool = []
-        for i in cfg['sockets']:
-            self._socket_pool.append(Socket(i, callable_target))
-        return
+class Pool(wayround_org.socketserver.service.SocketServicePool):
 
     def connect_applications(self, application_pool):
-        for i in self._socket_pool:
+        for i in self.get_socket_pool():
             i.connect_applications(application_pool)
-        return
-
-    def start(self):
-        for i in self._socket_pool:
-            i.start()
-        return
-
-    def stop(self):
-        for i in self._socket_pool:
-            i.stop()
-        return
-
-    def wait(self):
-        for i in self._socket_pool:
-            i.wait()
         return
