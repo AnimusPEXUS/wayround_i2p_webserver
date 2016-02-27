@@ -6,6 +6,7 @@ import pwd
 import os
 
 import wayround_org.utils.osutils
+import wayround_org.utils.socket
 
 import wayround_org.http.message
 
@@ -106,6 +107,12 @@ class Server:
             ):
 
         sock.setblocking(False)
+
+        if isinstance(sock, ssl.SSLSocket):
+            wayround_org.utils.socket.nb_handshake(
+                sock,
+                stop_event=serv_stop_event
+                )
 
         error = False
         ws_application_inst = None
