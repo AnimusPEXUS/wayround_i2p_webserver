@@ -108,105 +108,109 @@ class Server:
             ):
 
         sock.setblocking(False)
+        
+        try:
 
-        if isinstance(sock, ssl.SSLSocket):
-            wayround_org.utils.socket.nb_handshake(
-                sock,
-                stop_event=serv_stop_event
-                )
-
-        error = False
-        ws_application_inst = None
-
-        (header_bytes, line_terminator,
-            request_line_parsed, header_fields,
-            error) = wayround_org.http.message.read_and_parse_header(sock)
-
-        if error:
-            print("Some error on read_and_parse_header()")
-
-        if error:
-            # in case of error socket must be closed anyway
-            sock.close()
-
-        if not error:
-
-            host_field_value = None
-
-            if ws_socket_inst.default_application_name is not None:
-                ddn = self.application_pool.get_by_name(
-                    ws_socket_inst.default_application_name
-                    )
-
-                if ddn is not None:
-                    host_field_value = ddn.domain
-                else:
-                    raise Exception(
-                        "configure: socket has default application name, "
-                        "but it's not found int application pool"
-                        )
-
-            host_field_value_client_provided = False
-
-            for i in header_fields:
-                if i[0].lower() == 'host':
-                    host_field_value = i[1]
-                    host_field_value_client_provided = True
-                    break
-
-            if host_field_value is None:
-                self.error_socket_shutdown(
+            if isinstance(sock, ssl.SSLSocket):
+                wayround_org.utils.socket.nb_handshake(
                     sock,
-                    wayround_org.http.message.HTTPResponse(
-                        500,
-                        None,
-                        "Internal Server Error: "
-                        "not configured default and "
-                        "not Host request field provided"
-                        )
+                    stop_event=serv_stop_event
                     )
-                error = True
 
-        if not error:
-            if host_field_value is not None:
-                if not host_field_value in ws_socket_inst.domains:
+            error = False
+            ws_application_inst = None
+
+            (header_bytes, line_terminator,
+                request_line_parsed, header_fields,
+                error) = wayround_org.http.message.read_and_parse_header(sock)
+
+            if error:
+                print("Some error on read_and_parse_header()")
+
+            if error:
+                # in case of error socket must be closed anyway
+                sock.close()
+
+            if not error:
+
+                host_field_value = None
+
+                if ws_socket_inst.default_application_name is not None:
+                    ddn = self.application_pool.get_by_name(
+                        ws_socket_inst.default_application_name
+                        )
+
+                    if ddn is not None:
+                        host_field_value = ddn.domain
+                    else:
+                        raise Exception(
+                            "configure: socket has default application name, "
+                            "but it's not found int application pool"
+                            )
+
+                host_field_value_client_provided = False
+
+                for i in header_fields:
+                    if i[0].lower() == 'host':
+                        host_field_value = i[1]
+                        host_field_value_client_provided = True
+                        break
+
+                if host_field_value is None:
                     self.error_socket_shutdown(
                         sock,
                         wayround_org.http.message.HTTPResponse(
                             500,
                             None,
                             "Internal Server Error: "
-                            "requested Host not served by this socket"
+                            "not configured default and "
+                            "not Host request field provided"
                             )
                         )
                     error = True
 
-        if not error:
-            ws_application_inst = ws_socket_inst.domains[host_field_value]
+            if not error:
+                if host_field_value is not None:
+                    if not host_field_value in ws_socket_inst.domains:
+                        self.error_socket_shutdown(
+                            sock,
+                            wayround_org.http.message.HTTPResponse(
+                                500,
+                                None,
+                                "Internal Server Error: "
+                                "requested Host not served by this socket"
+                                )
+                            )
+                        error = True
 
-            # creating new thread here to free all unneeded resources used by
-            # callable_target_for_socket_pool()
+            if not error:
+                ws_application_inst = ws_socket_inst.domains[host_field_value]
 
-            t = threading.Thread(
-                name='callable_target_for_socket_pool child',
-                target=ws_application_inst.module_inst.callable_for_webserver,
-                args=(
-                    transaction_id,
-                    serv,
-                    serv_stop_event,
-                    sock,
-                    addr,
+                # creating new thread here to free all unneeded resources used by
+                # callable_target_for_socket_pool()
 
-                    ws_socket_inst,
-                    ws_application_inst,
+                t = threading.Thread(
+                    name='callable_target_for_socket_pool child',
+                    target=ws_application_inst.module_inst.callable_for_webserver,
+                    args=(
+                        transaction_id,
+                        serv,
+                        serv_stop_event,
+                        sock,
+                        addr,
 
-                    header_bytes,
-                    line_terminator,
-                    request_line_parsed,
-                    header_fields
+                        ws_socket_inst,
+                        ws_application_inst,
+
+                        header_bytes,
+                        line_terminator,
+                        request_line_parsed,
+                        header_fields
+                        )
                     )
-                )
-            t.start()
+                t.start()
+        except:
+            logging.exception("error")
 
         return
 
