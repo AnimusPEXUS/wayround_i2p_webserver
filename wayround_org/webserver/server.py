@@ -5,6 +5,7 @@ import grp
 import pwd
 import os
 import ssl
+import logging
 
 import wayround_org.utils.osutils
 import wayround_org.utils.socket
@@ -108,7 +109,9 @@ class Server:
             ):
 
         sock.setblocking(False)
-        
+
+        error = False
+
         try:
 
             if isinstance(sock, ssl.SSLSocket):
@@ -117,7 +120,6 @@ class Server:
                     stop_event=serv_stop_event
                     )
 
-            error = False
             ws_application_inst = None
 
             (header_bytes, line_terminator,
@@ -183,34 +185,37 @@ class Server:
                             )
                         error = True
 
-            if not error:
-                ws_application_inst = ws_socket_inst.domains[host_field_value]
-
-                # creating new thread here to free all unneeded resources used by
-                # callable_target_for_socket_pool()
-
-                t = threading.Thread(
-                    name='callable_target_for_socket_pool child',
-                    target=ws_application_inst.module_inst.callable_for_webserver,
-                    args=(
-                        transaction_id,
-                        serv,
-                        serv_stop_event,
-                        sock,
-                        addr,
-
-                        ws_socket_inst,
-                        ws_application_inst,
-
-                        header_bytes,
-                        line_terminator,
-                        request_line_parsed,
-                        header_fields
-                        )
-                    )
-                t.start()
         except:
             logging.exception("error")
+            sock.close()
+            error = True
+
+        if not error:
+            ws_application_inst = ws_socket_inst.domains[host_field_value]
+
+            # creating new thread here to free all unneeded resources used by
+            # callable_target_for_socket_pool()
+
+            t = threading.Thread(
+                name='callable_target_for_socket_pool child',
+                target=ws_application_inst.module_inst.callable_for_webserver,
+                args=(
+                    transaction_id,
+                    serv,
+                    serv_stop_event,
+                    sock,
+                    addr,
+
+                    ws_socket_inst,
+                    ws_application_inst,
+
+                    header_bytes,
+                    line_terminator,
+                    request_line_parsed,
+                    header_fields
+                    )
+                )
+            t.start()
 
         return
 
