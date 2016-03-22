@@ -187,7 +187,6 @@ class Server:
 
         except:
             logging.exception("error")
-            sock.close()
             error = True
 
         if not error:
@@ -216,6 +215,12 @@ class Server:
                     )
                 )
             t.start()
+
+        if error:
+            try:
+                sock.close()
+            except:
+                logging.exception("error")
 
         return
 
