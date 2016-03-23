@@ -108,6 +108,8 @@ class Server:
             ws_socket_inst
             ):
 
+        logging.info("webserver accepting new connection from {}".format(addr))
+
         sock.setblocking(False)
 
         error = False

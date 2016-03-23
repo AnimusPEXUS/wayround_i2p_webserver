@@ -163,6 +163,8 @@ class WebServerAppModule:
                 self.remote_port,
                 self.host_value
                 )
+        logging.info("addr ({}) requested: {}".format(addr, header_fields))
+        logging.info("addr ({}) line: {}".format(addr, request_line_parsed))
 
         http_req = wayround_org.http.message.HTTPRequest(
             transaction_id,
