@@ -4,14 +4,15 @@ from setuptools import setup
 
 setup(
     name='wayround_org_webserver',
-    version='0.2.8',
+    version='0.2.9',
     description='homebrewn webserver',
     author='Alexey Gorshkov',
     author_email='animus@wayround.org',
     url='https://github.com/AnimusPEXUS/wayround_org_webserver',
     install_requires=[
         'wayround_org_utils',
-        'wayround_org_socketserver'
+        'wayround_org_socketserver',
+        'wayround_org.wsgi'
         ],
     packages=[
         'wayround_org.webserver',
