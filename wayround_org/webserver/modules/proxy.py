@@ -66,6 +66,8 @@ class WebServerAppModule:
         self.gid = None
         self.uid = None
 
+        self._stop_flag = threading.Event()
+
         return
 
     def start(self):
@@ -89,7 +91,16 @@ class WebServerAppModule:
                     self.uid
                     )
 
-            # starting process
+            threading.Thread(target=self._process_watcher).start()
+
+        return
+
+    def _process_watcher(self):
+
+        while True:
+
+            if self._stop_flag.is_set():
+                break
 
             cmd = []
 
@@ -97,8 +108,6 @@ class WebServerAppModule:
 
             if self.on_start['args']:
                 cmd += self.on_start['args']
-
-            # print("starting: {}".format(' '.join(cmd)))
 
             self._httpd_process = subprocess.Popen(
                 cmd,
@@ -112,9 +121,21 @@ class WebServerAppModule:
                     )
                 )
 
+            while True:
+                if self._stop_flag.is_set():
+                    break
+
+                try:
+                    self._httpd_process.wait(5)
+                except subprocess.TimeoutExpired:
+                    continue
+
+                threading.Thread(target=self.stop).start()
+
         return
 
     def stop(self):
+        self._stop_flag.set()
         if self.on_start is not None:
             if self._proc is not None:
                 self._proc.terminate()
@@ -163,8 +184,13 @@ class WebServerAppModule:
                 self.remote_port,
                 self.host_value
                 )
-        logging.info("addr ({}) requested: {}".format(addr, header_fields))
-        logging.info("addr ({}) line: {}".format(addr, request_line_parsed))
+
+        logging.info(
+            "proxy mod addr ({}) requested: {}".format(addr, header_fields)
+            )
+        logging.info(
+            "proxy mod addr ({}) line: {}".format(addr, request_line_parsed)
+            )
 
         http_req = wayround_org.http.message.HTTPRequest(
             transaction_id,

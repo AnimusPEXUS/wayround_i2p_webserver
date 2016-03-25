@@ -116,11 +116,13 @@ class Server:
 
         try:
 
+            '''
             if isinstance(sock, ssl.SSLSocket):
                 wayround_org.utils.socket.nb_handshake(
                     sock,
                     stop_event=serv_stop_event
                     )
+            '''
 
             ws_application_inst = None
 
@@ -155,8 +157,8 @@ class Server:
                 host_field_value_client_provided = False
 
                 for i in header_fields:
-                    if i[0].lower() == 'host':
-                        host_field_value = i[1]
+                    if i[0].lower() == b'host':
+                        host_field_value = str(i[1], 'idna').lower()
                         host_field_value_client_provided = True
                         break
 
@@ -192,6 +194,12 @@ class Server:
             error = True
 
         if not error:
+            logging.info(
+                "addr ({}), host_field_value: {}".format(
+                    addr,
+                    host_field_value
+                    )
+                )
             ws_application_inst = ws_socket_inst.domains[host_field_value]
 
             # creating new thread here to free all unneeded resources used by

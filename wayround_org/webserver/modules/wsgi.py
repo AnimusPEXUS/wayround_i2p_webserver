@@ -1,4 +1,5 @@
 
+import logging
 import runpy
 
 import wayround_org.http.server
@@ -91,6 +92,13 @@ class WebServerAppModule:
             request_line_parsed,
             header_fields
             ):
+
+        logging.info(
+            "wsgi mod addr ({}) requested: {}".format(addr, header_fields)
+            )
+        logging.info(
+            "wsgi mod addr ({}) line: {}".format(addr, request_line_parsed)
+            )
 
         self.http_server.callable_for_socket_server(
             transaction_id,
