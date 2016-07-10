@@ -1,19 +1,23 @@
 #!/usr/bin/python3
 
-import sys
 
-del sys.path[0]
+def main():
 
-import logging
+    import sys
 
-import wayround_org.utils.program
+    del sys.path[0]
 
-wayround_org.utils.program.logging_setup(loglevel='INFO')
+    import logging
 
-import wayround_org.webserver.commands
+    import wayround_org.utils.program
 
-commands = wayround_org.webserver.commands.commands()
+    wayround_org.utils.program.logging_setup(loglevel='INFO')
 
-ret = wayround_org.utils.program.program('wrows', commands, None)
+    import wayround_org.webserver.commands
 
-exit(ret)
+    commands = wayround_org.webserver.commands.commands()
+
+    ret = wayround_org.utils.program.program('wrows', commands, None)
+
+if __name__ == '__main__':
+    exit(main())

@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name='wayround_org_webserver',
-    version='0.2.9.4',
+    version='0.3',
     description='homebrewn webserver',
     author='Alexey Gorshkov',
     author_email='animus@wayround.org',
@@ -23,7 +23,7 @@ setup(
         ],
     entry_points={
         'console_scripts': [
-            'wrows = wayround_org.webserver.main'
+            'wrows = wayround_org.webserver.main:main'
             ],
         }
     )
