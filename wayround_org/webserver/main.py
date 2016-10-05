@@ -1,23 +1,13 @@
 #!/usr/bin/python3
 
+import wayround_org.utils.program
+import wayround_org.webserver.commands
 
-def main():
-
-    import sys
-
-    del sys.path[0]
-
-    import logging
-
-    import wayround_org.utils.program
-
-    wayround_org.utils.program.logging_setup(loglevel='INFO')
-
-    import wayround_org.webserver.commands
-
-    commands = wayround_org.webserver.commands.commands()
-
-    ret = wayround_org.utils.program.program('wrows', commands, None)
+main = wayround_org.utils.program.MainScript(
+    wayround_org.webserver.commands,
+    'wrows',
+    'INFO'
+    ).main
 
 if __name__ == '__main__':
     exit(main())
