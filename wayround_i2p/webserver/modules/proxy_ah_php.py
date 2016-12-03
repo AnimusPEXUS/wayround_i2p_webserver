@@ -10,9 +10,9 @@ import time
 import tempfile
 import gc
 
-import wayround_org.utils.path
+import wayround_i2p.utils.path
 
-import wayround_org.webserver.module_miscs
+import wayround_i2p.webserver.module_miscs
 
 
 class WebServerAppModule:
@@ -56,12 +56,12 @@ class WebServerAppModule:
         #self._one_thread_lock = threading.Lock()
 
         self.tmp_ini_dir = tempfile.TemporaryDirectory()
-        self.tmp_ini_dir_file_name = wayround_org.utils.path.join(
+        self.tmp_ini_dir_file_name = wayround_i2p.utils.path.join(
             self.tmp_ini_dir.name,
             'httpd.conf'
             )
 
-        self.pidfile = wayround_org.utils.path.join(
+        self.pidfile = wayround_i2p.utils.path.join(
             self.tmp_ini_dir.name,
             'pidfile'
             )
@@ -255,7 +255,7 @@ PidFile "{pidfile}"
         tmp_ini_dir_file.close()
 
         self.gid, self.uid = \
-            wayround_org.webserver.module_miscs.reformat_gid_uid(
+            wayround_i2p.webserver.module_miscs.reformat_gid_uid(
                 self.gid,
                 self.uid
                 )
@@ -278,7 +278,7 @@ PidFile "{pidfile}"
             cmd,
             cwd=self.document_root,
             stdin=subprocess.PIPE,
-            preexec_fn=wayround_org.webserver.module_miscs.demote_subprocess(
+            preexec_fn=wayround_i2p.webserver.module_miscs.demote_subprocess(
                 self.gid,
                 self.uid
                 )
@@ -337,7 +337,7 @@ PidFile "{pidfile}"
                 break
 
         header_fields = \
-            wayround_org.webserver.module_miscs.host_value_hendeling_routine(
+            wayround_i2p.webserver.module_miscs.host_value_hendeling_routine(
                 header_fields,
                 self.host_mode,
                 self.remote_address,
@@ -345,7 +345,7 @@ PidFile "{pidfile}"
                 self.host_value
                 )
 
-        http_req = wayround_org.http.message.HTTPRequest(
+        http_req = wayround_i2p.http.message.HTTPRequest(
             transaction_id,
             serv,
             serv_stop_event,
@@ -355,7 +355,7 @@ PidFile "{pidfile}"
             header_fields
             )
 
-        http_req2 = wayround_org.http.message.ClientHTTPRequest(
+        http_req2 = wayround_i2p.http.message.ClientHTTPRequest(
             http_req.method,
             http_req.requesttarget,
             http_req.header_fields,
@@ -366,13 +366,13 @@ PidFile "{pidfile}"
 
         stop_event = threading.Event()
 
-        wayround_org.utils.socket.nb_sendall(
+        wayround_i2p.utils.socket.nb_sendall(
             remote_socket,
             reassembled_header_bytes,
             stop_event
             )
 
-        wayround_org.webserver.module_miscs.proxify_socket_threads(
+        wayround_i2p.webserver.module_miscs.proxify_socket_threads(
             sock,
             remote_socket,
             'some',

@@ -8,7 +8,7 @@ import ssl
 import time
 import select
 
-import wayround_org.utils.socket
+import wayround_i2p.utils.socket
 
 
 def demote_subprocess(gid, uid):
@@ -81,7 +81,7 @@ def proxify_socket(one, another, name, stop_event):
         if stop_event.is_set():
             break
 
-        data = wayround_org.utils.socket.nb_recv(one, 4096, stop_event)
+        data = wayround_i2p.utils.socket.nb_recv(one, 4096, stop_event)
 
         # print("proxify_socket recv (name: {}): {}".format(name, data))
 
@@ -94,7 +94,7 @@ def proxify_socket(one, another, name, stop_event):
         if len(data) == 0:
             break
 
-        wayround_org.utils.socket.nb_sendall(another, data, stop_event)
+        wayround_i2p.utils.socket.nb_sendall(another, data, stop_event)
 
     stop_event.set()
 

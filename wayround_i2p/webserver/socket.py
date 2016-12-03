@@ -2,11 +2,11 @@
 import socket
 import ssl
 
-import wayround_org.socketserver.server
-import wayround_org.socketserver.service
+import wayround_i2p.socketserver.server
+import wayround_i2p.socketserver.service
 
-import wayround_org.webserver.config
-import wayround_org.webserver.application
+import wayround_i2p.webserver.config
+import wayround_i2p.webserver.application
 
 
 class Socket:
@@ -32,7 +32,7 @@ class Socket:
 
         self.ssl = None
         if 'SSL' in socket_data_dict:
-            self.ssl = wayround_org.socketserver.server.SSLConfig(
+            self.ssl = wayround_i2p.socketserver.server.SSLConfig(
                 socket_data_dict['SSL']
                 )
 
@@ -40,7 +40,7 @@ class Socket:
 
         self.socket = None
 
-        self.socket_server = wayround_org.socketserver.server.SocketServer(
+        self.socket_server = wayround_i2p.socketserver.server.SocketServer(
             self.socket,
             self.target,
             ssl_config=self.ssl
@@ -133,7 +133,7 @@ class Socket:
         return
 
 
-class Pool(wayround_org.socketserver.service.SocketServicePool):
+class Pool(wayround_i2p.socketserver.service.SocketServicePool):
 
     def connect_applications(self, application_pool):
         for i in self.get_socket_pool():

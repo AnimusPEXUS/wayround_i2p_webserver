@@ -9,9 +9,9 @@ import copy
 import os
 import subprocess
 
-import wayround_org.http.message
+import wayround_i2p.http.message
 
-import wayround_org.webserver.module_miscs
+import wayround_i2p.webserver.module_miscs
 
 
 class WebServerAppModule:
@@ -86,7 +86,7 @@ class WebServerAppModule:
                 pass
 
             self.gid, self.uid = \
-                wayround_org.webserver.module_miscs.reformat_gid_uid(
+                wayround_i2p.webserver.module_miscs.reformat_gid_uid(
                     self.gid,
                     self.uid
                     )
@@ -115,7 +115,7 @@ class WebServerAppModule:
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                preexec_fn=wayround_org.webserver.module_miscs.demote_subprocess(
+                preexec_fn=wayround_i2p.webserver.module_miscs.demote_subprocess(
                     self.gid,
                     self.uid
                     )
@@ -177,7 +177,7 @@ class WebServerAppModule:
                 break
 
         header_fields = \
-            wayround_org.webserver.module_miscs.host_value_hendeling_routine(
+            wayround_i2p.webserver.module_miscs.host_value_hendeling_routine(
                 header_fields,
                 self.host_mode,
                 self.remote_address,
@@ -192,7 +192,7 @@ class WebServerAppModule:
             "proxy mod addr ({}) line: {}".format(addr, request_line_parsed)
             )
 
-        http_req = wayround_org.http.message.HTTPRequest(
+        http_req = wayround_i2p.http.message.HTTPRequest(
             transaction_id,
             serv,
             serv_stop_event,
@@ -202,7 +202,7 @@ class WebServerAppModule:
             header_fields
             )
 
-        http_req2 = wayround_org.http.message.ClientHTTPRequest(
+        http_req2 = wayround_i2p.http.message.ClientHTTPRequest(
             http_req.method,
             http_req.requesttarget,
             http_req.header_fields,
@@ -213,13 +213,13 @@ class WebServerAppModule:
 
         stop_event = threading.Event()
 
-        wayround_org.utils.socket.nb_sendall(
+        wayround_i2p.utils.socket.nb_sendall(
             remote_socket,
             reassembled_header_bytes,
             stop_event
             )
 
-        wayround_org.webserver.module_miscs.proxify_socket_threads(
+        wayround_i2p.webserver.module_miscs.proxify_socket_threads(
             sock,
             remote_socket,
             'some',

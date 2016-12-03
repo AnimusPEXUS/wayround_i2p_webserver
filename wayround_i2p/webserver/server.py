@@ -7,14 +7,14 @@ import os
 import ssl
 import logging
 
-import wayround_org.utils.osutils
-import wayround_org.utils.socket
+import wayround_i2p.utils.osutils
+import wayround_i2p.utils.socket
 
-import wayround_org.http.message
+import wayround_i2p.http.message
 
-import wayround_org.webserver.config
-import wayround_org.webserver.socket
-import wayround_org.webserver.application
+import wayround_i2p.webserver.config
+import wayround_i2p.webserver.socket
+import wayround_i2p.webserver.application
 
 
 class Server:
@@ -36,14 +36,14 @@ class Server:
 
     def start(self):
 
-        cfg = wayround_org.webserver.config.read_from_fs(self._config_filepath)
+        cfg = wayround_i2p.webserver.config.read_from_fs(self._config_filepath)
 
-        self.socket_pool = wayround_org.webserver.socket.Pool(
+        self.socket_pool = wayround_i2p.webserver.socket.Pool(
             cfg,
             self.callable_target_for_socket_pool,
-            cls_to_use=wayround_org.webserver.socket.Socket
+            cls_to_use=wayround_i2p.webserver.socket.Socket
             )
-        self.application_pool = wayround_org.webserver.application.Pool(
+        self.application_pool = wayround_i2p.webserver.application.Pool(
             cfg,
             self,
             self.socket_pool
@@ -67,7 +67,7 @@ class Server:
         except KeyError:
             pass
 
-        self.gid, self.uid = wayround_org.utils.osutils.convert_gid_uid(
+        self.gid, self.uid = wayround_i2p.utils.osutils.convert_gid_uid(
             self.gid, self.uid
             )
 
@@ -118,7 +118,7 @@ class Server:
 
             '''
             if isinstance(sock, ssl.SSLSocket):
-                wayround_org.utils.socket.nb_handshake(
+                wayround_i2p.utils.socket.nb_handshake(
                     sock,
                     stop_event=serv_stop_event
                     )
@@ -128,7 +128,7 @@ class Server:
 
             (header_bytes, line_terminator,
                 request_line_parsed, header_fields,
-                error) = wayround_org.http.message.read_and_parse_header(sock)
+                error) = wayround_i2p.http.message.read_and_parse_header(sock)
 
             if error:
                 print("Some error on read_and_parse_header()")
@@ -165,7 +165,7 @@ class Server:
                 if host_field_value is None:
                     self.error_socket_shutdown(
                         sock,
-                        wayround_org.http.message.HTTPResponse(
+                        wayround_i2p.http.message.HTTPResponse(
                             500,
                             None,
                             "Internal Server Error: "
@@ -180,7 +180,7 @@ class Server:
                     if not host_field_value in ws_socket_inst.domains:
                         self.error_socket_shutdown(
                             sock,
-                            wayround_org.http.message.HTTPResponse(
+                            wayround_i2p.http.message.HTTPResponse(
                                 500,
                                 None,
                                 "Internal Server Error: "

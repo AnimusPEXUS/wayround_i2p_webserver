@@ -2,8 +2,8 @@
 import logging
 import runpy
 
-import wayround_org.http.server
-import wayround_org.wsgi.server
+import wayround_i2p.http.server
+import wayround_i2p.wsgi.server
 
 
 class WebServerAppModule:
@@ -57,11 +57,11 @@ class WebServerAppModule:
                     )
                 )
 
-        self.wsgi_server = wayround_org.wsgi.server.WSGIServer(
+        self.wsgi_server = wayround_i2p.wsgi.server.WSGIServer(
             self.wsgi_callable
             )
 
-        self.http_server = wayround_org.http.server.HTTPServer(
+        self.http_server = wayround_i2p.http.server.HTTPServer(
             self.wsgi_server.callable_for_http_server
             )
 

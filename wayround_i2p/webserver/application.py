@@ -5,7 +5,7 @@ import logging
 """
 
 module structure description:
-    wayround_org_webserver application module must have 2 strict things:
+    wayround_i2p_webserver application module must have 2 strict things:
         1. class named 'WebServerModule', which has following
            parameters:
             1. reference to webserver instance;
@@ -81,7 +81,7 @@ class Application:
 
         module = None
 
-        module_name = 'wayround_org.webserver.modules.{}'.format(self.module)
+        module_name = 'wayround_i2p.webserver.modules.{}'.format(self.module)
 
         try:
             module = importlib.import_module(module_name)
